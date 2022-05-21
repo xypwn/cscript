@@ -18,13 +18,13 @@ at_args=""
 args=""
 arg() {
 	if [ -z "$shebang_mode" ] && [ -n "$at_args" ]; then
-		args="$args\n$1"
+		args="$(printf "%s\n%s" "$args" "$1")"
 	elif [ "$shebang_mode" = "next_is_file" ]; then
 		basedir="$(dirname "$1")"
-		files="$files\n$(basename "$1")"
+		files="$(printf "%s\n%s" "$files" "$(basename "$1")")"
 		shebang_mode=1
 	elif [ -n "$shebang_mode" ]; then
-		args="$args\n$1"
+		args="$(printf "%s\n%s" "$args" "$1")"
 	else
 		case "$1" in
 			# Pass through following args
@@ -41,11 +41,11 @@ arg() {
 				;;
 			# Add option
 			-*)
-				opts="$opts\n$1"
+				opts="$(printf "%s\n%s" "$opts" "$1")"
 				;;
 			# Add source file
 			*)
-				files="$files\n$1"
+				files="$(printf "%s\n%s" "$files" "$1")"
 				;;
 		esac
 	fi
@@ -54,9 +54,9 @@ for a in "$@"; do
 	arg "$a"
 done
 # Remove empty lines
-files="$(echo -n "$files" | grep '.')"
-opts="$(echo -n "$opts" | grep '.')"
-args="$(echo -n "$args" | grep '.')"
+files="$(printf "%s" "$files" | grep '.')"
+opts="$(printf "%s" "$opts" | grep '.')"
+args="$(printf "%s" "$args" | grep '.')"
 
 cd "$basedir"
 
@@ -72,16 +72,16 @@ EOF
 
 # Compile and run C program
 cleanup() {
-	echo -n "$files" | xargs -d'\n' sed "s@^//#!@#!@g" -i
+	printf "%s" "$files" | xargs -d'\n' sed "s@^//#!@#!@g" -i
 	rm -f "$tmpfile"
 }
 tmpfile="$(mktemp -t "cscript.XXXXXXXXXX")"
-echo -n "$files" | xargs -d'\n' sed "s@^#!@//#!@g" -i
+printf "%s" "$files" | xargs -d'\n' sed "s@^#!@//#!@g" -i
 trap 'cleanup; exit 130' INT
-if ! echo -n "$files\n$opts" | xargs -d'\n' cc -Wall -pedantic -o "$tmpfile"; then
+if ! printf "%s\n%s" "$files" "$opts" | xargs -d'\n' cc -Wall -pedantic -o "$tmpfile"; then
 	cleanup
 	exit 1
 fi
-echo -n "$args" | xargs -d'\n' "$tmpfile"
+printf "%s" "$args" | xargs -d'\n' "$tmpfile"
 trap - INT
 cleanup
