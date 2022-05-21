@@ -1,0 +1,78 @@
+#!/usr/bin/env sh
+
+#Show help
+if [ -z "$1" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ]; then
+	echo "Usage:"
+	echo "  $(basename "$0") <source.c>... <-option>... [-- <args>...]"
+	echo "Or at the beginning of a C file:"
+	echo "  #!$(basename "$0") -s [<options>...]"
+	exit 1
+fi
+
+# Get file names, options and passed-through args
+files=""
+opts=""
+shebang_mode=""
+at_args=""
+args=""
+arg() {
+	if [ -z "$shebang_mode" ] && [ -n "$at_args" ]; then
+		args="$args\n$1"
+	elif [ "$shebang_mode" = "next_is_file" ]; then
+		files="$files\n$1"
+		shebang_mode=1
+	elif [ -n "$shebang_mode" ]; then
+		args="$args\n$1"
+	else
+		case "$1" in
+			# Pass through following args
+			--)
+				at_args=1
+				;;
+			# Shebang mode (shebang args are not automatically separated;
+			# the following arg is always the script filename)
+			-s*)
+				for a in $(eval "echo $(echo "$1" | cut -c3-)"); do
+					arg "$a"
+				done
+				shebang_mode="next_is_file"
+				;;
+			# Add option
+			-*)
+				opts="$opts\n$1"
+				;;
+			# Add source file
+			*)
+				[ ! -f "$1" ] && [ ! -L "$1" ] &&
+					echo "Source file '$1' does not exist" &&
+					exit 1
+				files="$files\n$1"
+				;;
+		esac
+	fi
+}
+for a in "$@"; do
+	arg "$a"
+done
+# Remove empty lines
+files="$(echo -n "$files" | grep '.')"
+opts="$(echo -n "$opts" | grep '.')"
+args="$(echo -n "$args" | grep '.')"
+
+[ -z "$files" ] && echo "No input files" && exit 1
+
+# Compile and run C program
+cleanup() {
+	echo -n "$files" | xargs -d'\n' sed "s@^//#!@#!@g" -i
+	rm -f "$tmpfile"
+}
+tmpfile="$(mktemp -t "cscript.XXXXXXXXXX")"
+echo -n "$files" | xargs -d'\n' sed "s@^#!@//#!@g" -i
+trap 'cleanup; exit 130' INT
+if ! echo -n "$files\n$opts" | xargs -d'\n' cc -Wall -pedantic -o "$tmpfile"; then
+	cleanup
+	exit 1
+fi
+echo -n "$args" | xargs -d'\n' "$tmpfile"
+trap - INT
+cleanup
