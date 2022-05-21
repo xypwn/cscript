@@ -3,11 +3,11 @@
 A simple yet powerful script to run C code like a scripting language. Supports multiple files and the inclusion of libraries.
 
 ## Table of Contents
-1. ### [Installation](#installation)
-2. ### [Examples](#example-simple)
-    1. #### [Example (simple)](#example-simple)
-    2. #### [Example (with GTK4)](#example-with-gtk4)
-    3. #### [Example (multiple files)](#example-multiple-files)
+1. [Installation](#installation)
+2. [Examples](#example-simple)
+    1. [Example (simple)](#example-simple)
+    2. [Example (with GTK4)](#example-with-gtk4)
+    3. [Example (multiple files)](#example-multiple-files)
 
 ## Installation
 Run the following shell command to install cscript:
