@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-#Show help
+# Show help
 if [ -z "$1" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ]; then
 	echo "Usage:"
 	echo "  $(basename "$0") <source.c>... <-option>... [-- <args>...]"
@@ -10,6 +10,7 @@ if [ -z "$1" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ]; then
 fi
 
 # Get file names, options and passed-through args
+basedir="."
 files=""
 opts=""
 shebang_mode=""
@@ -19,7 +20,8 @@ arg() {
 	if [ -z "$shebang_mode" ] && [ -n "$at_args" ]; then
 		args="$args\n$1"
 	elif [ "$shebang_mode" = "next_is_file" ]; then
-		files="$files\n$1"
+		basedir="$(dirname "$1")"
+		files="$files\n$(basename "$1")"
 		shebang_mode=1
 	elif [ -n "$shebang_mode" ]; then
 		args="$args\n$1"
@@ -43,9 +45,6 @@ arg() {
 				;;
 			# Add source file
 			*)
-				[ ! -f "$1" ] && [ ! -L "$1" ] &&
-					echo "Source file '$1' does not exist" &&
-					exit 1
 				files="$files\n$1"
 				;;
 		esac
@@ -59,7 +58,17 @@ files="$(echo -n "$files" | grep '.')"
 opts="$(echo -n "$opts" | grep '.')"
 args="$(echo -n "$args" | grep '.')"
 
+cd "$basedir"
+
+# Check for invalid files
 [ -z "$files" ] && echo "No input files" && exit 1
+while IFS= read -r l; do
+	[ ! -f "$l" ] && [ ! -L "$l" ] &&
+		echo "Source file '$l' does not exist" &&
+		exit 1
+done << EOF
+$files
+EOF
 
 # Compile and run C program
 cleanup() {
