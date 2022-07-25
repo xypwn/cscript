@@ -6,8 +6,12 @@ if [ -z "$1" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ]; then
 	echo "  $(basename "$0") <source.c>... <-option>... [-- <args>...]"
 	echo "Or at the beginning of a C file:"
 	echo "  #!$(basename "$0") -s [<options>...]"
+	echo
+	echo "To debug the program in GDB, just set CSCRIPT_GDB=1."
 	exit 1
 fi
+
+[ -n "$CSCRIPT_GDB" ] && ([ "$CSCRIPT_GDB" = "0" ] || [ "$CSCRIPT_GDB" = "false" ]) && unset CSCRIPT_GDB
 
 # Get file names, options and passed-through args
 basedir="."
@@ -53,6 +57,7 @@ arg() {
 for a in "$@"; do
 	arg "$a"
 done
+[ -n "$CSCRIPT_GDB" ] && opts="$(printf "%s\n%s" "$opts" "-ggdb")"
 # Remove empty lines
 files="$(printf "%s" "$files" | grep '.')"
 opts="$(printf "%s" "$opts" | grep '.')"
@@ -82,6 +87,10 @@ if ! printf "%s\n%s" "$files" "$opts" | xargs -d'\n' cc -Wall -pedantic -o "$tmp
 	cleanup
 	exit 1
 fi
-printf "%s" "$args" | xargs -d'\n' "$tmpfile"
+if [ -n "$CSCRIPT_GDB" ]; then
+	printf "%s" "$args" | xargs -o -d'\n' gdb --args "$tmpfile"
+else
+	printf "%s" "$args" | xargs -d'\n' "$tmpfile"
+fi
 trap - INT
 cleanup
