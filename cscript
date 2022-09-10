@@ -91,7 +91,7 @@ fi
 if [ -n "$CSCRIPT_GDB" ]; then
 	printf "%s" "$args" | xargs -o -d'\n' gdb --args "$tmpfile"
 else
-	printf "%s" "$args" | xargs -d'\n' "$tmpfile"
+	printf "%s" "$args" | xargs -o -d'\n' "$tmpfile"
 fi
 trap - INT
 cleanup
