@@ -16,7 +16,8 @@ fi
 # Get file names, options and passed-through args
 basedir="."
 files=""
-opts=""
+opts="-Wall
+-pedantic"
 shebang_mode=""
 at_args=""
 args=""
@@ -83,7 +84,7 @@ cleanup() {
 tmpfile="$(mktemp -t "cscript.XXXXXXXXXX")"
 printf "%s" "$files" | xargs -d'\n' sed "s@^#!@//#!@g" -i
 trap 'cleanup; exit 130' INT
-if ! printf "%s\n%s" "$files" "$opts" | xargs -d'\n' cc -Wall -pedantic -o "$tmpfile"; then
+if ! printf "%s\n%s" "$files" "$opts" | xargs -d'\n' cc -o "$tmpfile"; then
 	cleanup
 	exit 1
 fi
